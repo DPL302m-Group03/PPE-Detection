@@ -33,8 +33,8 @@ class Bottleneck(nn.Module):
         super().__init__()
         self.conv1 = Conv(in_channels, out_channels, kernel_size=3, stride=1, padding=1)
         self.conv2 = Conv(out_channels, out_channels, kernel_size=3, stride=1, padding=1)
-        self.shortcut = shortcut and in_channels == out_channels
-
+        self.shortcut = shortcut 
+        
     def forward(self, x):
         x_origin = x
         x = self.conv1(x)
@@ -64,11 +64,9 @@ class C2f(nn.Module):
         x = self.conv1(x)
         x1, x2 = x.chunk(self.mid_channels, dim=1)
 
-        outputs  = [x1, x2]
         for bottleneck in self.bottlenecks:
             x1 = bottleneck(x1)
-            outputs.append(x1)
+            x = torch.cat([x, x1], dim=1)
         
-        x = torch.cat(outputs, dim=1)
         x = self.conv2(x)
         return x
