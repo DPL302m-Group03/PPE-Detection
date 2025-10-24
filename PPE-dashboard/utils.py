@@ -33,11 +33,12 @@ except Exception:
 
 class WorkerTracker:
     """Tracks workers using IoU and manages their PPE state."""
-    def __init__(self, iou_threshold=0.4, max_disappeared=200):
+    def __init__(self, iou_threshold=0.4, max_disappeared=300):
         self.next_worker_id = 1
         self.workers = {}
-        self.iou_threshold = iou_threshold
+        self.iou_threshold = iou_threshold # This is now set from the Streamlit slider
         self.max_disappeared = max_disappeared
+        logging.info(f"WorkerTracker initialized with IoU threshold: {self.iou_threshold}") # Log the threshold
         
     def calculate_iou(self, box1, box2):
         x1 = max(box1[0], box2[0])
@@ -76,6 +77,7 @@ class WorkerTracker:
                 if wid in matched:
                     continue
                 iou = self.calculate_iou(worker_box['bbox'], self.workers[wid]['bbox'])
+                # Use the class's iou_threshold
                 if iou > self.iou_threshold and iou > best_iou:
                     best_iou = iou
                     best_id = wid
@@ -170,18 +172,12 @@ class CameraWorker(threading.Thread):
 
 class InferenceWorker(threading.Thread):
     """Thread for running model inference."""
-    # ---
-    # --- CRITICAL FIX: Changed 'model_getter' to 'model_object' ---
-    # ---
     def __init__(self, frame_q, result_q, model_object, conf_thresh_getter, 
                  ppe_monitor_getter, stop_event, tracker, violation_buffer):
         super().__init__(daemon=True)
         self.frame_q = frame_q
         self.result_q = result_q
-        
-        # --- CRITICAL FIX: Store the model object directly ---
         self.model = model_object 
-        
         self.get_conf = conf_thresh_getter
         self.get_ppe_to_monitor = ppe_monitor_getter
         self.stop_event = stop_event
@@ -205,7 +201,6 @@ class InferenceWorker(threading.Thread):
             scale = 960 / max(h, w) # Resize to max 960px
             frame_rgb_resized = cv2.resize(frame_rgb, (int(w*scale), int(h*scale)))
 
-            # --- CRITICAL FIX: Use the stored model object ---
             model = self.model
             
             conf = self.get_conf()
@@ -236,7 +231,6 @@ class InferenceWorker(threading.Thread):
                 logging.warning("Inference skipped: Model or YOLO not available.")
             
             # Add to violation buffer
-            # Resize original frame to match annotated size for buffer
             frame_rgb_to_buffer = cv2.resize(frame_rgb, (annotated.shape[1], annotated.shape[0]))
             self.violation_buffer.append(frame_rgb_to_buffer.copy())
             
@@ -292,7 +286,7 @@ def load_model(path: str):
         logging.error(f"Failed to load model from {path}: {e}", exc_info=True)
         return None
 
-def annotate_frame(frame_rgb, results, conf_thresh=0.35):
+def annotate_frame(frame_rgb, results, conf_thresh=0.50):
     """Draws basic model detections (all classes)."""
     img_bgr = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
     dets = []
