@@ -68,8 +68,8 @@ The application operates in two primary modes: **Live Camera Monitoring** and **
 
 1.  **Clone the repository:**
     ```bash
-    git clone <repository-url>
-    cd <repository-folder>
+    git clone https://github.com/DPL302m-Group03/PPE-Detection.git
+    cd PPE-dashboard
     ```
 
 2.  **Install dependencies:**
@@ -117,19 +117,19 @@ The application operates in two primary modes: **Live Camera Monitoring** and **
 ````
 
 ppe-dashboard/
-├── app.py             \# Main Streamlit UI file
-├── utils.py           \# Business logic, workers (camera, inference), tracking
-├── config.py          \# Configuration for paths, colors, and labels
-├── style.css          \# CSS file for UI styling
-├── requirements.txt   \# Required Python libraries
-├── models/            \# Directory for .pt model files
+├── app.py              # Main Streamlit UI file
+├── utils.py            # Business logic, workers (camera, inference), tracking
+├── config.py           # Configuration for paths, colors, and labels
+├── style.css           # CSS file for UI styling
+├── requirements.txt    # Required Python libraries
+├── models/             # Directory for .pt model files
 │   └── (e.g., yolov8s\_ppe.pt)
-├── output/            \# Directory for all outputs
-│   ├── detections.csv   \# Log of all violations
-│   ├── frames/          \# Contains snapshots
-│   ├── reports/         \# Contains session reports
-│   └── violations/      \# Contains violation video clips
-└── README.md          \# This documentation file
+├── output/             # Directory for all outputs
+│   ├── detections.csv    # Log of all violations
+│   ├── frames/           # Contains snapshots
+│   ├── reports/          # Contains session reports
+│   └── violations/       # Contains violation video clips
+└── README.md           # This documentation file
 
 ````
 
