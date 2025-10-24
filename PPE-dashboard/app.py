@@ -44,81 +44,16 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
-st.markdown("""
-<style>
-    .main-header {
-        background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);
-        padding: 1.5rem;
-        border-radius: 10px;
-        color: white;
-        text-align: center;
-        margin-bottom: 1rem;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    .main-header h1 {
-        color: white;
-        margin: 0;
-        font-size: 2.5rem;
-    }
-    .main-header p {
-        color: #e0e7ff;
-        margin: 0.5rem 0 0 0;
-    }
-    .metric-card {
-        background: white;
-        padding: 1rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        border-left: 4px solid #3b82f6;
-    }
-    .alert-card {
-        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-        border-left: 4px solid #ef4444;
-        padding: 1rem;
-        border-radius: 8px;
-        margin: 0.5rem 0;
-        animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.8; }
-    }
-    .compliant-card {
-        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-        border-left: 4px solid #22c55e;
-        padding: 1rem;
-        border-radius: 8px;
-        margin: 0.5rem 0;
-    }
-    .stButton>button {
-        width: 100%;
-        border-radius: 8px;
-        font-weight: 600;
-        transition: all 0.3s;
-    }
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    }
-    div[data-testid="stMetricValue"] {
-        font-size: 2rem;
-        font-weight: 700;
-    }
-    .violation-badge {
-        background: #ef4444;
-        color: white;
-        padding: 0.25rem 0.5rem;
-        border-radius: 4px;
-        font-size: 0.875rem;
-        font-weight: 600;
-    }
-    /* Hide plotly modebar */
-    .plotly .modebar {
-        display: none !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+# --- Function to load CSS ---
+def load_css(file_name):
+    try:
+        with open(file_name, "r") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    except FileNotFoundError:
+        st.error(f"CSS file not found: {file_name}")
+
+# --- Load Custom CSS ---
+load_css("style.css")
 
 
 # --- Main App ---
@@ -559,7 +494,8 @@ def main():
             finally:
                 if cap:
                     cap.release()
-                Path(temp_video_path).unlink() 
+                if Path(temp_video_path).exists():
+                    Path(temp_video_path).unlink() 
 
         
         else:
@@ -936,3 +872,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
