@@ -100,87 +100,98 @@ class Concat(nn.Module):
         return torch.cat(x, dim=self.dimension)
 
 class DFL(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, bins=16):
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, bias=False)
-        self.out_channels = out_channels
-        self.in_channels = in_channels
+        self.bins = bins
+        self.conv = nn.Conv2d(bins, 1, kernel_size=1, bias=False)
+        
+        bin_w = torch.arange(bins, dtype=torch.float32).reshape(1, bins, 1, 1)
+        self.conv.weight = torch.nn.Parameter(bin_w, requires_grad=False)
 
     def forward(self, x):
-        batch_size, _, height, width = x.shape
+        b, B, c = x.shape
+        x = x.view(b, 4, self.bins, c).transpose(1, 2)
+        x = x.softmax(1)
         x = self.conv(x)
-        x = x.view(batch_size, self.out_channels // 4, 4, height, width)
-        x = x.permute(0, 1, 3, 4, 2).contiguous()
-        x = x.view(batch_size, self.out_channels // 4, height, width * 4)
+        x = x.view(b, 4, c)
         return x
-    
+
 class Detect(nn.Module):
-    def __init__(self, category):
+    def __init__(self, type='s', bins=16, n_classes=80):
         super().__init__()
-        d, w, r = yolo_type(category)  # 'n', 's', 'm', 'l', 'x'
+        self.bins = bins
+        self.n_classes = n_classes
+        self.coordinates = 4 * bins 
+        self.no = self.coordinates + n_classes 
+
+        self.stride = torch.zeros(3)
+
+        d, w, r = yolo_type(type)  # 'n', 's', 'm', 'l', 'x'
+        # Box
         self.cv2 = nn.ModuleList([
             nn.Sequential(
-                Conv(20*20*512*w*r, 64, kernel_size=3, stride=1, padding=1),
-                Conv(64, 64, kernel_size=3, stride=1, padding=1),
-                nn.Conv2d(64, 64, kernel_size=1, stride=1)
+                Conv(int(256*w), self.coordinates, kernel_size=3, stride=1, padding=1),
+                Conv(self.coordinates, self.coordinates, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(self.coordinates, self.coordinates, kernel_size=1, stride=1)
             ),
 
             nn.Sequential(
-                Conv(40*40*512*w, 64, kernel_size=3, stride=1, padding=1),
-                Conv(64, 64, kernel_size=3, stride=1, padding=1),
-                nn.Conv2d(64, 64, kernel_size=1, stride=1)
+                Conv(int(512*w), self.coordinates, kernel_size=3, stride=1, padding=1),
+                Conv(self.coordinates, self.coordinates, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(self.coordinates, self.coordinates, kernel_size=1, stride=1)
             ),
 
             nn.Sequential(
-                Conv(80*80*256*w, 64, kernel_size=3, stride=1, padding=1),
-                Conv(64, 64, kernel_size=3, stride=1, padding=1),
-                nn.Conv2d(64, 64, kernel_size=1, stride=1)
+                Conv(int(512*w*r), self.coordinates, kernel_size=3, stride=1, padding=1),
+                Conv(self.coordinates, self.coordinates, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(self.coordinates, self.coordinates, kernel_size=1, stride=1)
             )
         ])    
 
+        # Class
         self.cv3 = nn.ModuleList([
             nn.Sequential(
-                Conv(64, 128, kernel_size=3, stride=1, padding=1),
-                Conv(128, 128, kernel_size=3, stride=1, padding=1),
-                nn.Conv2d(128, 128, kernel_size=1, stride=1)
+                Conv(int(256*w), self.n_classes, kernel_size=3, stride=1, padding=1),
+                Conv(self.n_classes, self.n_classes, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(self.n_classes, self.n_classes, kernel_size=1, stride=1)
             ),
 
             nn.Sequential(
-                Conv(128, 128, kernel_size=3, stride=1, padding=1),
-                Conv(128, 128, kernel_size=3, stride=1, padding=1),
-                nn.Conv2d(128, 128, kernel_size=1, stride=1)
+                Conv(int(512*w), self.n_classes, kernel_size=3, stride=1, padding=1),
+                Conv(self.n_classes, self.n_classes, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(self.n_classes, self.n_classes, kernel_size=1, stride=1)
             ),
 
             nn.Sequential(
-                Conv(256, 128, kernel_size=3, stride=1, padding=1),
-                Conv(128, 128, kernel_size=3, stride=1, padding=1),
-                nn.Conv2d(128, 128, kernel_size=1, stride=1)
+                Conv(int(512*w*r), self.n_classes, kernel_size=3, stride=1, padding=1),
+                Conv(self.n_classes, self.n_classes, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(self.n_classes, self.n_classes, kernel_size=1, stride=1)
             )
         ]) 
 
-        self.dfl = DFL(16, 1)
+        self.dfl = DFL(bins=16)
 
     def forward(self, x):
-        outputs = []
-        for i in range(3):
-            x1 = self.cv2[i](x[i])
-            x2 = self.cv3[i](x[i])
-            x2 = self.dfl(x2)
-            outputs.append(torch.cat([x1, x2], dim=1))
-        return outputs
+        for i in range(len(self.cv2)):
+            box = self.cv2[i](x[i])
+            cls = self.cv3[i](x[i])
+            x = torch.cat([box, cls], dim=1)
+
+        if self.training:
+            return x
+        
+        anchors, strides = (i.transpose(0, 1) for i in self.make_anchors(x, self.stride))     
         
 class DetectionModel(nn.Module):
-    def __init__(self, path=None):
+    def __init__(self, path=None, type='s'):
         super().__init__()
         if path:
-            category = path.split('_')[0][-1]
+            type = path.split('_')[0][-1]
             state_dict = torch.load(path)
             self.load_state_dict(state_dict, strict=False)  # strict=False nếu không khớp 100% tên layer
             print("Loaded state_dict into custom model!")
-        else:
-            raise Exception("Please provide the path to the weights file.")
         
-        d, w, r = yolo_type(category)  # 'n', 's', 'm', 'l', 'x'
+        d, w, r = yolo_type(type)  # 'n', 's', 'm', 'l', 'x'
         self.model = nn.Sequential(
             Conv(3, int(64*w), kernel_size=3, stride=2, padding=1),                # 0
             Conv(int(64*w), int(128*w), kernel_size=3, stride=2, padding=1),       # 1
@@ -204,12 +215,11 @@ class DetectionModel(nn.Module):
             Conv(int(512*w), int(512*w), kernel_size=3, stride=2, padding=1),      # 19
             Concat(dimension=1),                                                   # 20
             C2f(int(512*w*(1 + r)), int(512*w*r), n_bottlenecks=max(int(3*d), 1)), # 21
-            Detect(category)                                                               # 22
+            Detect(type, bins=16)                                                               # 22
         )
 
     def forward(self, x):
         return self.model(x)
-    
     
 class YOLO(nn.Module):
     def __init__(self, path=None):
@@ -221,10 +231,15 @@ class YOLO(nn.Module):
 # ...existing code...
 
 if __name__ == "__main__":
-    DetectionModel = YOLO(path='weights\yolov8s_state_dict.pt')
-    print("Loaded state_dict into custom model!")
-    print(DetectionModel.model)
+    # DetectionModel = YOLO(path='weights\yolov8s_state_dict.pt')
+    # print("Loaded state_dict into custom model!")
+    # print(DetectionModel.model)
 
-    # In tổng số parameters
-    total_params = sum(p.numel() for p in DetectionModel.model.parameters())
+    # # In tổng số parameters
+    # total_params = sum(p.numel() for p in DetectionModel.model.parameters())
+    # print(f"Tổng số parameters: {total_params:,}")
+
+    model = DetectionModel()
+    print(model.model)
+    total_params = sum(p.numel() for p in model.parameters())
     print(f"Tổng số parameters: {total_params:,}")
