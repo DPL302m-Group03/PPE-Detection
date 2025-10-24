@@ -13,6 +13,61 @@
 
 A streamlined Streamlit dashboard for **Automated Detection of Personal Protective Equipment (PPE) for Construction Safety** using YOLOv8, focusing on real-time analysis and file processing.
 
+```mermaid
+---
+config:
+  layout: elk
+  look: handDrawn
+  theme: neo-dark
+---
+flowchart TB
+ subgraph UI["Streamlit UI\n(app.py / app_new.py / basic_app.py)"]
+        UI_Sidebar["Sidebar:\nmodel selector\nconf slider\nIoU slider\nPPE checkboxes"]
+        UI_Controls["Controls:\nStart / Stop / Snapshot / Upload"]
+        UI_Placeholders["Placeholders:\nvideo, metrics, gauges, charts, alerts, tables"]
+  end
+ subgraph MODELS["Models (disk)"]
+        MODELS_DIR["PPE-dashboard/models/*.pt"]
+  end
+ subgraph WORKERS["Background workers (utils.py)"]
+        CW["CameraWorker\n(thread)"]
+        IQ["frame_q\n(Queue)"]
+        IW["InferenceWorker\n(thread)"]
+        RQ["result_q\n(Queue)"]
+        VB["violation_buffer\n(deque)"]
+        TRACKER["WorkerTracker\n(IoU-based)"]
+  end
+ subgraph HELPERS["Helpers & Persistence (utils.py)"]
+        ANNOT["annotate_frame()\nannotate_frame_with_workers()"]
+        SAVE_DET["save_detection()\n-> output/detections.csv"]
+        SAVE_CLIP["save_violation_clip()\n-> output/violations/*.mp4"]
+        REPORT["generate_session_report()\n-> output/reports/*.md"]
+        LISTLOAD["list_models()\nload_model()"]
+        CHARTS["create_gauge_chart()\nplotly helpers"]
+  end
+    UI_Controls -- Start --> CW
+    CW -- frames --> IQ
+    IQ --> IW
+    IW -- payload --> RQ
+    RQ --> UI_Placeholders
+    IW -- append frames --> VB
+    IW -- uses --> TRACKER
+    TRACKER -- updates --> IW
+    IW -- dets --> ANNOT
+    ANNOT --> UI_Placeholders
+    UI_Controls -- Upload --> FileMode["File Processor\n(image / video)"]
+    FileMode --> LISTLOAD & ANNOT & TRACKER & UI_Placeholders & SAVE_DET & SAVE_CLIP
+    UI_Sidebar --> LISTLOAD
+    LISTLOAD --> MODELS_DIR
+    LISTLOAD -- loads --> IW
+    UI_Placeholders --> CHARTS & REPORT
+    IW --> SAVE_DET & SAVE_CLIP
+    UI_Sidebar -- IoU slider --> TRACKER
+    UI_Sidebar -- conf slider --> IW
+    UI_Sidebar -- ppe_to_monitor --> IW
+    classDef comp fill:#f8f9fa,stroke:#cbd5e1
+```
+
 ---
 
 ## 📖 Table of Contents
