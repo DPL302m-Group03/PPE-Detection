@@ -1,6 +1,6 @@
-# 🦺 Personal Protective Equipment (PPE) Detection System
-
 <div align="center">
+
+# 🦺 Personal Protective Equipment (PPE) Detection System
 
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)
@@ -9,7 +9,7 @@
 
 *A modern AI-powered system for detecting Personal Protective Equipment compliance in construction and industrial environments.*
 
-[Features](#-features) • [Demo](#-demo) • [Installation](#-installation) • [Usage](#-usage) • [Project Structure](#-project-structure) • [Documentation](#-documentation)
+[Demo](#-demo) • [Installation](#-installation) • [Usage](#-usage) • [Project Structure](#-project-structure) • [Documentation](#-documentation)
 
 </div>
 
@@ -116,7 +116,6 @@ A worker is classified as **UNSAFE** when:
 ##  Table of Contents
 
 - [Overview](#-overview)
-- [Features](#-features)
 - [Installation](#-installation)
   - [Prerequisites](#prerequisites)
   - [Clone Repository](#clone-repository)
