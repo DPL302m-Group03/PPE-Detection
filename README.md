@@ -35,7 +35,85 @@ Worker wearing **helmet** and **vest**, but **missing gloves** ❌
 
 ---
 
-## 📋 Table of Contents
+## � Project Structure
+
+```
+PPE-Detection/
+│
+├── app/                          # Streamlit web application
+│   ├── ui.py                     # Main UI interface
+│   ├── backend.py                # Detection logic and processing
+│   ├── style.css                 # Custom CSS styling
+│   └── __pycache__/
+│
+├── config/                       # Configuration files
+│   └── PPE_Dataset.yaml          # Dataset configuration
+│
+├── data/                         # Data directory
+│   ├── demos/                    # Demo GIFs and media
+│   │   ├── SAFE.gif              # Safe worker demo
+│   │   └── UNSAFE.gif            # Unsafe worker demo
+│   ├── images/                   # Image datasets
+│   └── videos/                   # Video datasets
+│
+├── docs/                         # Documentation files
+│
+├── results/                      # Output directory for processed videos
+│   └── ppe_detection_*.mp4       # Exported detection results
+│
+├── src/                          # Source modules
+│   ├── creator.py                # Model creation utilities
+│   └── model.py                  # Model architecture
+│
+├── utils/                        # Utility functions
+│   ├── caculator.py              # Geometric calculations (IoU, inside check)
+│   └── processor.py              # Data processing utilities
+│
+├── weights/                      # Model weights directory
+│   ├── ppe/                      # PPE detection models
+│   │   ├── ppe_8l_best.pt        # YOLOv8 Large model
+│   │   ├── ppe_8s_best.pt        # YOLOv8 Small model
+│   │   ├── ppe_rt_detr_best.pt   # RT-DETR model
+│   │   └── ppe-8m.pt             # YOLOv8 Medium model
+│   └── yolo/                     # Base YOLO weights
+│
+├── main.py                       # CLI entry point
+├── requirements.txt              # Python dependencies
+├── README.md                     # This file
+└── .gitignore                    # Git ignore rules
+```
+
+---
+
+## 🤖 Model Information
+
+### Detection Classes
+
+| Class ID | Name | Description |
+|----------|------|-------------|
+| 0 | worker | Person/worker in the scene |
+| 1 | helmet | Safety helmet worn |
+| 2 | vest | Safety vest worn |
+| 3 | gloves | Safety gloves worn |
+| 4 | boots | Safety boots worn |
+| 5 | no_helmet | Helmet not detected |
+| 6 | no_vest | Vest not detected |
+| 7 | no_gloves | Gloves not detected |
+| 8 | no_boots | Boots not detected |
+
+### Safety Classification Logic
+
+A worker is classified as **SAFE** when:
+- ✅ All selected PPE items are detected within the worker's bounding box
+- ✅ Each item meets the confidence threshold
+
+A worker is classified as **UNSAFE** when:
+- ❌ One or more required PPE items are missing
+- ❌ Missing items are displayed below the worker's bounding box
+
+---
+
+##  Table of Contents
 
 - [Overview](#-overview)
 - [Features](#-features)
@@ -46,13 +124,13 @@ Worker wearing **helmet** and **vest**, but **missing gloves** ❌
 - [Usage](#-usage)
   - [Web Application (Streamlit)](#web-application-streamlit)
   - [Command Line Interface](#command-line-interface)
-- [Project Structure](#-project-structure)
 - [Configuration](#-configuration)
-- [Model Information](#-model-information)
 - [Documentation](#-documentation)
+- [Development](#️-development)
 - [Contributing](#-contributing)
 - [License](#-license)
 - [Acknowledgments](#-acknowledgments)
+- [Contact](#-contact)
 
 ---
 
@@ -67,37 +145,6 @@ The **PPE Detection System** is an intelligent real-time monitoring solution tha
 - 📊 **Intuitive Dashboard**: Modern web interface with customizable settings
 - 💾 **Export Results**: Save annotated videos with detection results
 - ⚡ **High Performance**: Optimized for speed and accuracy
-
----
-
-## ✨ Features
-
-### Detection Capabilities
-- **Worker Detection**: Automatically identify workers in the scene
-- **PPE Equipment Recognition**:
-  - 🪖 **Helmet** - Head protection
-  - 🦺 **Safety Vest** - High-visibility clothing
-  - 🧤 **Gloves** - Hand protection
-  - 👢 **Safety Boots** - Foot protection
-
-### Application Features
-- 🎨 **Modern UI**: Beautiful, responsive interface with dark theme
-- 📹 **Multiple Input Sources**:
-  - Upload video files (MP4, AVI, MOV, MKV)
-  - Specify video file path
-  - Live webcam/camera feed
-- ⚙️ **Customizable Settings**:
-  - Model selection (multiple YOLOv8 variants)
-  - Confidence threshold adjustment
-  - Selective PPE item detection
-- 💾 **Export Options**:
-  - Save annotated videos
-  - Custom output paths
-  - Download processed results
-- 📊 **Real-time Metrics**:
-  - FPS monitoring
-  - Detection statistics
-  - Worker safety status
 
 ---
 
@@ -208,56 +255,6 @@ Follow the interactive prompts:
 
 ---
 
-## 📁 Project Structure
-
-```
-PPE-Detection/
-│
-├── app/                          # Streamlit web application
-│   ├── ui.py                     # Main UI interface
-│   ├── backend.py                # Detection logic and processing
-│   ├── style.css                 # Custom CSS styling
-│   └── __pycache__/
-│
-├── config/                       # Configuration files
-│   └── PPE_Dataset.yaml          # Dataset configuration
-│
-├── data/                         # Data directory
-│   ├── demos/                    # Demo GIFs and media
-│   │   ├── SAFE.gif              # Safe worker demo
-│   │   └── UNSAFE.gif            # Unsafe worker demo
-│   ├── images/                   # Image datasets
-│   └── videos/                   # Video datasets
-│
-├── docs/                         # Documentation files
-│
-├── results/                      # Output directory for processed videos
-│   └── ppe_detection_*.mp4       # Exported detection results
-│
-├── src/                          # Source modules
-│   ├── creator.py                # Model creation utilities
-│   └── model.py                  # Model architecture
-│
-├── utils/                        # Utility functions
-│   ├── caculator.py              # Geometric calculations (IoU, inside check)
-│   └── processor.py              # Data processing utilities
-│
-├── weights/                      # Model weights directory
-│   ├── ppe/                      # PPE detection models
-│   │   ├── ppe_8l_best.pt        # YOLOv8 Large model
-│   │   ├── ppe_8s_best.pt        # YOLOv8 Small model
-│   │   ├── ppe_rt_detr_best.pt   # RT-DETR model
-│   │   └── ppe-8m.pt             # YOLOv8 Medium model
-│   └── yolo/                     # Base YOLO weights
-│
-├── main.py                       # CLI entry point
-├── requirements.txt              # Python dependencies
-├── README.md                     # This file
-└── .gitignore                    # Git ignore rules
-```
-
----
-
 ## ⚙️ Configuration
 
 ### Dataset Configuration
@@ -293,34 +290,6 @@ Available models in `weights/ppe/`:
 
 ---
 
-## 🤖 Model Information
-
-### Detection Classes
-
-| Class ID | Name | Description |
-|----------|------|-------------|
-| 0 | worker | Person/worker in the scene |
-| 1 | helmet | Safety helmet worn |
-| 2 | vest | Safety vest worn |
-| 3 | gloves | Safety gloves worn |
-| 4 | boots | Safety boots worn |
-| 5 | no_helmet | Helmet not detected |
-| 6 | no_vest | Vest not detected |
-| 7 | no_gloves | Gloves not detected |
-| 8 | no_boots | Boots not detected |
-
-### Safety Classification Logic
-
-A worker is classified as **SAFE** when:
-- ✅ All selected PPE items are detected within the worker's bounding box
-- ✅ Each item meets the confidence threshold
-
-A worker is classified as **UNSAFE** when:
-- ❌ One or more required PPE items are missing
-- ❌ Missing items are displayed below the worker's bounding box
-
----
-
 ## 📚 Documentation
 
 ### Key Modules
@@ -351,18 +320,6 @@ Processing utilities:
 ---
 
 ## 🛠️ Development
-
-### Creating GIFs from Videos
-
-To create demo GIFs using FFmpeg:
-
-```bash
-# Create palette for better quality
-ffmpeg -i results\video.mp4 -vf "fps=20,scale=640:-1:flags=lanczos,palettegen" palette.png
-
-# Generate GIF using palette
-ffmpeg -i results\video.mp4 -i palette.png -lavfi "fps=20,scale=640:-1:flags=lanczos [x]; [x][1:v] paletteuse" data\demos\output.gif
-```
 
 ### Adding New Models
 
