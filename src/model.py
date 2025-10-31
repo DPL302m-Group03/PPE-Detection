@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-from processor import yolo_type
+from utils.processor import yolo_type
 
 class Conv(nn.Module):
     # Standard convolution

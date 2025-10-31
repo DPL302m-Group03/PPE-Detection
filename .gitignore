@@ -1,2 +1,12 @@
+# Files
 test.ipynb
+test.py
+
+# Folders
+data/*
+!data/demos/
+
+results/
+weights/yolo
+
 __pycache__/
